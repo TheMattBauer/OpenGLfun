@@ -35,11 +35,11 @@ OBJModel::OBJModel(const std::string& fileName)
             {
                 case 'v':
                     if(lineCStr[1] == 't')
-                        this->uvs.push_back(ParseOBJVec2(line));
+                        this->uvs.push_back(ParseOBJVec2(line, lineCStr[2]));
                     else if(lineCStr[1] == 'n')
-                        this->normals.push_back(ParseOBJVec3(line));
+                        this->normals.push_back(ParseOBJVec3(line, lineCStr[2]));
                     else if(lineCStr[1] == ' ' || lineCStr[1] == '\t')
-                        this->vertices.push_back(ParseOBJVec3(line));
+						this->vertices.push_back(ParseOBJVec3(line, lineCStr[1]));
                 break;
                 case 'f':
                     CreateOBJFace(line);
@@ -244,6 +244,11 @@ unsigned int OBJModel::FindLastVertexIndex(const std::vector<OBJIndex*>& indexLo
 void OBJModel::CreateOBJFace(const std::string& line)
 {
     std::vector<std::string> tokens = SplitString(line, ' ');
+	if((int)tokens.size() < 3)
+	{
+		tokens = SplitString(line, '\t');
+	}
+
 
     this->OBJIndices.push_back(ParseOBJIndex(tokens[1], &this->hasUVs, &this->hasNormals));
     this->OBJIndices.push_back(ParseOBJIndex(tokens[2], &this->hasUVs, &this->hasNormals));
@@ -291,7 +296,7 @@ OBJIndex OBJModel::ParseOBJIndex(const std::string& token, bool* hasUVs, bool* h
     return result;
 }
 
-glm::vec3 OBJModel::ParseOBJVec3(const std::string& line) 
+glm::vec3 OBJModel::ParseOBJVec3(const std::string& line, char delim) 
 {
     unsigned int tokenLength = line.length();
     const char* tokenString = line.c_str();
@@ -300,22 +305,22 @@ glm::vec3 OBJModel::ParseOBJVec3(const std::string& line)
     
     while(vertIndexStart < tokenLength)
     {
-        if(tokenString[vertIndexStart] != ' ')
+        if(tokenString[vertIndexStart] != delim && tokenString[vertIndexStart] != ' ' && tokenString[vertIndexStart] != '\t')
             break;
         vertIndexStart++;
     }
     
-    unsigned int vertIndexEnd = FindNextChar(vertIndexStart, tokenString, tokenLength, ' ');
+    unsigned int vertIndexEnd = FindNextChar(vertIndexStart, tokenString, tokenLength, delim);
     
     float x = ParseOBJFloatValue(line, vertIndexStart, vertIndexEnd);
     
     vertIndexStart = vertIndexEnd + 1;
-    vertIndexEnd = FindNextChar(vertIndexStart, tokenString, tokenLength, ' ');
+    vertIndexEnd = FindNextChar(vertIndexStart, tokenString, tokenLength, delim);
     
     float y = ParseOBJFloatValue(line, vertIndexStart, vertIndexEnd);
     
     vertIndexStart = vertIndexEnd + 1;
-    vertIndexEnd = FindNextChar(vertIndexStart, tokenString, tokenLength, ' ');
+    vertIndexEnd = FindNextChar(vertIndexStart, tokenString, tokenLength, delim);
     
     float z = ParseOBJFloatValue(line, vertIndexStart, vertIndexEnd);
     
@@ -324,7 +329,7 @@ glm::vec3 OBJModel::ParseOBJVec3(const std::string& line)
     //glm::vec3(atof(tokens[1].c_str()), atof(tokens[2].c_str()), atof(tokens[3].c_str()))
 }
 
-glm::vec2 OBJModel::ParseOBJVec2(const std::string& line)
+glm::vec2 OBJModel::ParseOBJVec2(const std::string& line, char delim)
 {
     unsigned int tokenLength = line.length();
     const char* tokenString = line.c_str();
@@ -333,17 +338,17 @@ glm::vec2 OBJModel::ParseOBJVec2(const std::string& line)
     
     while(vertIndexStart < tokenLength)
     {
-        if(tokenString[vertIndexStart] != ' ')
+        if(tokenString[vertIndexStart] != delim && tokenString[vertIndexStart] != ' ' && tokenString[vertIndexStart] != '\t')
             break;
         vertIndexStart++;
     }
     
-    unsigned int vertIndexEnd = FindNextChar(vertIndexStart, tokenString, tokenLength, ' ');
+    unsigned int vertIndexEnd = FindNextChar(vertIndexStart, tokenString, tokenLength, delim);
     
     float x = ParseOBJFloatValue(line, vertIndexStart, vertIndexEnd);
     
     vertIndexStart = vertIndexEnd + 1;
-    vertIndexEnd = FindNextChar(vertIndexStart, tokenString, tokenLength, ' ');
+    vertIndexEnd = FindNextChar(vertIndexStart, tokenString, tokenLength, delim);
     
     float y = ParseOBJFloatValue(line, vertIndexStart, vertIndexEnd);
     
@@ -361,7 +366,7 @@ static inline unsigned int FindNextChar(unsigned int start, const char* str, uns
     while(result < length)
     {
         result++;
-        if(str[result] == token)
+        if(str[result] == token || str[result] == ' ' || str[result] == '\t')
             break;
     }
     
@@ -391,7 +396,7 @@ static inline std::vector<std::string> SplitString(const std::string &s, char de
     {
         while(end <= strLength)
         {
-            if(cstr[end] == delim)
+            if(cstr[end] == delim || cstr[end] == ' ' || cstr[end] == '\t')
                 break;
             end++;
         }

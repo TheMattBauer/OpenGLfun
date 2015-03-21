@@ -16,7 +16,7 @@ Display::Display(int width, int height, const std::string& title)
     SDL_GL_SetAttribute (SDL_GL_DOUBLEBUFFER, 1);
 
 
-    m_window = SDL_CreateWindow(title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_OPENGL);
+    m_window = SDL_CreateWindow(title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_RENDERER_PRESENTVSYNC);
     m_glContext = SDL_GL_CreateContext(m_window);
 
 
@@ -55,7 +55,6 @@ void Display::Update()
         if(e.type == SDL_QUIT)
             m_isOpen = false;
     }
-
 }
 
 void Display::Clear(float r, float g, float b, float a)
@@ -63,4 +62,26 @@ void Display::Clear(float r, float g, float b, float a)
 	glClearColor(r, g, b, a);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glClear(GL_DEPTH_BUFFER_BIT);
+}
+
+int Display::GetHeight()
+{
+	int w;
+    int h;
+	int* p_w = &w;
+	int* p_h = &h;
+    SDL_GetWindowSize(m_window, p_w, p_h);
+
+	return h;
+}
+
+int Display::GetWidth()
+{
+	int w;
+	int h;
+	int* p_w = &w;
+	int* p_h = &h;
+    SDL_GetWindowSize(m_window, p_w, p_h);
+
+	return w;
 }

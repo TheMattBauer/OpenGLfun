@@ -7,7 +7,7 @@
 class Vertex
 {
 public:
-    Vertex(const glm:: vec3& pos, const glm:: vec2& texCoord, const glm:: vec3& normal = glm::vec3(0,0,0))
+    Vertex(const glm:: vec3& pos, const glm:: vec2& texCoord, const glm:: vec3& normal = glm::vec3(0,0,-1))
     {
         this->pos = pos;
         this->texCoord = texCoord;
@@ -36,6 +36,7 @@ private:
 class Mesh
 {
 public:
+	Mesh(){};
     Mesh(Vertex* vertices, unsigned int numVertices, unsigned int* indices, unsigned int numIndices);
 	Mesh(const std::string& fileName);
 
@@ -43,7 +44,7 @@ public:
 
     virtual ~Mesh(void);
 private:
-    Mesh(const Mesh& other);
+    
     void operator=(const Mesh& other);
 
 	void InitMesh(const IndexedModel& model);

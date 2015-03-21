@@ -8,6 +8,8 @@ public:
     void Update();
     void Clear(float r, float g, float b, float a);
     bool IsOpen();
+	int GetHeight();
+	int GetWidth();
 
 
     virtual ~Display(void);
