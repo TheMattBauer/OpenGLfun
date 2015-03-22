@@ -43,3 +43,9 @@ Temporary Items
 .apdisk
 *.tlog
 *.tlog
+*.tlog
+OpenGLfun/Debug/link.read.1.tlog
+OpenGLfun/Debug/Main.obj
+*.tlog
+OpenGLfun/Debug/link.command.1.tlog
+*.tlog

@@ -1,11 +1,12 @@
 #include "Mesh.h"
 #include <vector>
+#include <iostream>
+#include <exception>
 
 
 Mesh::Mesh(const std::string& fileName)
 {
-	IndexedModel model = OBJModel(fileName).ToIndexedModel();
-	InitMesh(model);
+	Reload(fileName);
 }
 
 Mesh::Mesh(Vertex* vertices, unsigned int numVertices, unsigned int* indices, unsigned int numIndices)
@@ -69,4 +70,11 @@ void Mesh::InitMesh(const IndexedModel& model)
 	
 
 	glBindVertexArray(0);
+}
+
+void Mesh::Reload(const std::string& fileName)
+{
+	
+	IndexedModel model = OBJModel(fileName).ToIndexedModel();
+	InitMesh(model);
 }

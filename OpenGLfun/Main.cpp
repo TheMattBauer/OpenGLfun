@@ -14,6 +14,8 @@
 #define WIDTH 800
 #define HEIGHT 600
 
+char fileName[MAX_PATH];
+
 static inline std::vector<std::string> SplitString(const std::string &s, char delim)
 {
     std::vector<std::string> elems;
@@ -134,40 +136,10 @@ std::list<Camera> LoadCameras()
 	return cameraList;
 }
 
-int main (int argc, char** argv)
+void KeyboardInput(Transform& transform, std::list<Camera>& cameraList, Mesh& mesh)
 {
 	SDL_Event event;
-	bool quit = false;
-
-	Display display (WIDTH,HEIGHT, "yo");
-
-	std::list<Camera> cameraList;
-	cameraList = LoadCameras();
-
-	char fileName[MAX_PATH];
-	OpenFileDialog(fileName);
-	std::cout << "FileName: "<< fileName << std::endl;
-	Mesh& mesh = Mesh(fileName);
-	Mesh* mesh_p = &mesh;
-
-	Shader shader("./res/basicShader");
-	Texture texture("./res/bricks.jpg");
-	Transform transform;
-
-	long last = 0;
-	float deltaTime = 0.0;
-
-    while (display.IsOpen() && !quit)
-    {
-
-		long now = SDL_GetTicks();
-		deltaTime = ((float)(now - last)) / 1000;
-		last = now;
-		//std::cout << deltaTime << std::endl;
-
-        display.Clear(0.09f,0.05f,0.05f,0);
-
-		SDL_WaitEvent(&event);
+	SDL_WaitEvent(&event);
 		switch(event.type)
 		{
 		case SDL_KEYDOWN:
@@ -297,11 +269,47 @@ int main (int argc, char** argv)
 			{
 				OpenFileDialog(fileName);
 				std::cout << "FileName: "<< fileName << std::endl;
-				Mesh& meshb = Mesh(fileName);
-				mesh_p = &meshb;
+				
+			}
+			else if(event.key.keysym.sym == SDLK_d)
+			{
+				mesh.Reload(fileName);
+				cameraList = LoadCameras();
 			}
 			break;
 		}
+}
+
+int main (int argc, char** argv)
+{
+	bool quit = false;
+
+	Display display (WIDTH,HEIGHT, "Matt Bauer");
+
+	std::list<Camera> cameraList;
+	cameraList = LoadCameras();
+
+	OpenFileDialog(fileName);
+	std::cout << "FileName: "<< fileName << std::endl;
+	Mesh mesh(fileName);
+	Shader shader("./res/basicShader");
+	Texture texture("./res/bricks.jpg");
+	Transform transform;
+
+	long last = 0;
+	float deltaTime = 0.0;
+
+    while (display.IsOpen() && !quit)
+    {
+
+		long now = SDL_GetTicks();
+		deltaTime = ((float)(now - last)) / 1000;
+		last = now;
+		//std::cout << deltaTime << std::endl;
+
+        display.Clear(0.09f,0.05f,0.05f,0);
+
+		KeyboardInput(transform, cameraList, mesh);
 
 		for (Camera cam : cameraList)
 		{
@@ -319,7 +327,7 @@ int main (int argc, char** argv)
 			shader.Bind();
 			texture.Bind(0);
 			shader.Update(transform, cam);
-			mesh_p->Draw();
+			mesh.Draw();
 		}
 
         display.Update();
