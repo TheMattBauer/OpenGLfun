@@ -28,10 +28,16 @@ public:
 class OBJModel
 {
 public:
+
     std::vector<OBJIndex> OBJIndices;
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec2> uvs;
     std::vector<glm::vec3> normals;
+	std::vector<glm::mat4> patches;
+	glm::mat4 bezierMat;
+
+	int resolution;
+
     bool hasUVs;
     bool hasNormals;
     
@@ -41,6 +47,8 @@ public:
 private:
     unsigned int FindLastVertexIndex(const std::vector<OBJIndex*>& indexLookup, const OBJIndex* currentIndex, const IndexedModel& result);
     void CreateOBJFace(const std::string& line);
+	void CreatePatch(const std::string& line);
+	void AddNewGeometryMats(const std::vector<glm::vec3>& patchVectors);
     
     glm::vec2 ParseOBJVec2(const std::string& line, char delim);
     glm::vec3 ParseOBJVec3(const std::string& line, char delim);

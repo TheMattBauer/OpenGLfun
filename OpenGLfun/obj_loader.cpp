@@ -3,6 +3,7 @@
 #include <iostream>
 #include <algorithm>
 #include <map>
+#include <cmath>
 
 static bool CompareOBJIndexPtr(const OBJIndex* a, const OBJIndex* b);
 static inline unsigned int FindNextChar(unsigned int start, const char* str, unsigned int length, char token);
@@ -12,8 +13,31 @@ static inline std::vector<std::string> SplitString(const std::string &s, char de
 
 OBJModel::OBJModel(const std::string& fileName)
 {
+	this->bezierMat[0][0] = -1.0f;
+	this->bezierMat[0][1] = 3.0f;
+	this->bezierMat[0][2] = -3.0f;
+	this->bezierMat[0][3] = 1.0f;
+
+	this->bezierMat[1][0] = 3.0f;
+	this->bezierMat[1][1] = -6.0f;
+	this->bezierMat[1][2] = 3.0f;
+	this->bezierMat[1][3] = 0.0f;
+
+	this->bezierMat[2][0] = -3.0f;
+	this->bezierMat[2][1] = 3.0f;
+	this->bezierMat[2][2] = 0.0f;
+	this->bezierMat[2][3] = 0.0f;
+
+	this->bezierMat[3][0] = 1.0f;
+	this->bezierMat[3][1] = 0.0f;
+	this->bezierMat[3][2] = 0.0f;
+	this->bezierMat[3][3] = 0.0f;
+
+
 	hasUVs = false;
 	hasNormals = false;
+	std::vector<glm::vec3> patchVectors;
+	int patchCounter = 0;
     std::ifstream file;
     file.open(fileName.c_str());
 
@@ -44,6 +68,22 @@ OBJModel::OBJModel(const std::string& fileName)
                 case 'f':
                     CreateOBJFace(line);
                 break;
+				case 'n':
+					resolution = ParseOBJFloatValue(line, 2, 3);
+                    //get resolution
+                break;
+				case 'b':
+					patchCounter++;
+					patchVectors.push_back(ParseOBJVec3(line, lineCStr[1]));
+
+					if (patchCounter == 16)
+					{
+						AddNewGeometryMats(patchVectors);
+						patchCounter = 0;
+						patchVectors.clear();
+					}
+                    //add patch
+                break;
                 default: break;
             };
         }
@@ -52,6 +92,58 @@ OBJModel::OBJModel(const std::string& fileName)
     {
         std::cerr << "Unable to load mesh: " << fileName << std::endl;
     }
+
+	if(!patches.empty())
+	{
+		for (int x = 0; x < patches.size(); x = x+3)
+		{
+			for(int i = 1; i < resolution; i++)
+			{
+				for(int j = 1; j < resolution; j++)
+				{
+
+					glm::vec3 vert_11;
+					glm::vec3 vert_10;
+					glm::vec3 vert_01;
+					glm::vec3 vert_00;
+
+					glm::vec3 face_1;
+					glm::vec3 face_2;
+
+					glm::vec4 U_1 = glm::vec4(pow((float)i/resolution, 3), pow((float)i/resolution, 2), (float)i/resolution, 1);
+					glm::vec4 V_1 = glm::vec4(pow((float)j/resolution, 3), pow((float)j/resolution, 2), (float)j/resolution, 1);
+
+					glm::vec4 U_0 = glm::vec4(pow(i-1/resolution, 3), pow(i-1/resolution, 2), i-1/resolution, 1);
+					glm::vec4 V_0 = glm::vec4(pow(j-1/resolution, 3), pow(j-1/resolution, 2), j-1/resolution, 1);
+
+					glm::vec4 Vecx_1 = bezierMat * patches[x] * bezierMat * V_1;
+					glm::vec4 Vecy_1 = bezierMat * patches[x+1] * bezierMat * V_1;
+					glm::vec4 Vecz_1 = bezierMat * patches[x+2] * bezierMat * V_1;
+
+					glm::vec4 Vecx_0 = bezierMat * patches[x] * bezierMat * V_0;
+					glm::vec4 Vecy_0 = bezierMat * patches[x+1] * bezierMat * V_0;
+					glm::vec4 Vecz_0 = bezierMat * patches[x+2] * bezierMat * V_0;
+
+					vert_11[0] = glm::dot(U_1, Vecx_1); // x
+					vert_11[1] = glm::dot(U_1, Vecy_1); // y
+					vert_11[2] = glm::dot(U_1, Vecz_1); // z
+
+					vert_10[0] = glm::dot(U_1, Vecx_0); // x
+					vert_10[1] = glm::dot(U_1, Vecy_0); // y
+					vert_10[2] = glm::dot(U_1, Vecz_0); // z
+
+					vert_01[0] = glm::dot(U_0, Vecx_1); // x
+					vert_01[1] = glm::dot(U_0, Vecy_1); // y
+					vert_01[2] = glm::dot(U_0, Vecz_1); // z
+
+					vert_00[0] = glm::dot(U_0, Vecx_0); // x
+					vert_00[1] = glm::dot(U_0, Vecy_0); // y
+					vert_00[2] = glm::dot(U_0, Vecz_0); // z
+
+				}
+			}
+		}
+	}
 }
 
 void IndexedModel::CalcNormals()
@@ -241,6 +333,27 @@ unsigned int OBJModel::FindLastVertexIndex(const std::vector<OBJIndex*>& indexLo
     return -1;
 }
 
+void OBJModel::CreatePatch(const std::string& line)
+{
+    std::vector<std::string> tokens = SplitString(line, ' ');
+	if((int)tokens.size() < 3)
+	{
+		tokens = SplitString(line, '\t');
+	}
+
+
+    this->OBJIndices.push_back(ParseOBJIndex(tokens[1], &this->hasUVs, &this->hasNormals));
+    this->OBJIndices.push_back(ParseOBJIndex(tokens[2], &this->hasUVs, &this->hasNormals));
+    this->OBJIndices.push_back(ParseOBJIndex(tokens[3], &this->hasUVs, &this->hasNormals));
+
+    if((int)tokens.size() > 4)
+    {
+        this->OBJIndices.push_back(ParseOBJIndex(tokens[1], &this->hasUVs, &this->hasNormals));
+        this->OBJIndices.push_back(ParseOBJIndex(tokens[3], &this->hasUVs, &this->hasNormals));
+        this->OBJIndices.push_back(ParseOBJIndex(tokens[4], &this->hasUVs, &this->hasNormals));
+    }
+}
+
 void OBJModel::CreateOBJFace(const std::string& line)
 {
     std::vector<std::string> tokens = SplitString(line, ' ');
@@ -353,6 +466,29 @@ glm::vec2 OBJModel::ParseOBJVec2(const std::string& line, char delim)
     float y = ParseOBJFloatValue(line, vertIndexStart, vertIndexEnd);
     
     return glm::vec2(x,y);
+}
+
+void OBJModel::AddNewGeometryMats(const std::vector<glm::vec3>& patchVectors)
+{
+	// Hard coded, but fuck it
+	glm::mat4 Cx;
+	glm::mat4 Cy;
+	glm::mat4 Cz;
+
+	for(int y=0; y < 4; y++)
+	{
+		for(int x=0; x < 4; x++)
+		{
+			Cx[y][x] = patchVectors[4 * y + x][0];
+			Cy[y][x] = patchVectors[4 * y + x][1];
+			Cz[y][x] = patchVectors[4 * y + x][2];
+		}
+	}
+
+	patches.push_back(Cx);
+	patches.push_back(Cy);
+	patches.push_back(Cz);
+
 }
 
 static bool CompareOBJIndexPtr(const OBJIndex* a, const OBJIndex* b)
